@@ -4,28 +4,30 @@ import sqlite3 as dbapi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
-class FiestraPrincipal(Gtk.Window):
 
+class FiestraPrincipal(Gtk.Window):
 
     def __init__(self):
         Gtk.Window.__init__(self, title="Interfaz Academia")
         self.set_border_width(10)
+        self.set_default_size(300, 300)
 
         notebook = Gtk.Notebook()
         self.add(notebook)
 
-        cajaExterior = Gtk.Box(orientation = Gtk.Orientation.VERTICAL, spacing=6)
+        cajaExterior = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         notebook.append_page(cajaExterior, Gtk.Label("Gestion de Alumnado"))
 
-        #Caja Principal que contiene los diferentes box para los botones, labels, etc...
+        # Caja Principal que contiene los diferentes box para los botones, labels, etc...
         boxPrincipal = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        cajaExterior.pack_start(boxPrincipal,True, False, 0)
+        cajaExterior.pack_start(boxPrincipal, True, False, 0)
 
-        #Caja que contiene los botones Añadir, Consultar y Borrar
+        # Caja que contiene los botones Añadir, Consultar y Borrar
         boxBotones = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         boxPrincipal.pack_start(boxBotones, True, False, 0)
 
         self.btnEngadir = Gtk.Button("Engadir")
+        self.btnEngadir.connect("clicked", self.on_btnAñadir_clicked)
         boxBotones.pack_start(self.btnEngadir, True, False, 0)
 
         self.btnConsultar = Gtk.Button("Consultar")
@@ -33,10 +35,10 @@ class FiestraPrincipal(Gtk.Window):
         boxBotones.pack_start(self.btnConsultar, True, False, 0)
 
         self.btnBorrar = Gtk.Button("Borrar")
+        self.btnBorrar.connect("clicked", self.on_btnBorrar_clicked)
         boxBotones.pack_start(self.btnBorrar, True, False, 0)
 
-
-        #Caja con Etiquetas1
+        # Caja con Etiquetas1
         boxLabel1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         boxPrincipal.pack_start(boxLabel1, True, False, 0)
 
@@ -49,7 +51,7 @@ class FiestraPrincipal(Gtk.Window):
         self.lblDni = Gtk.Label("DNI:")
         boxLabel1.pack_start(self.lblDni, True, False, 0)
 
-        #Caja con Entradas de Texto1
+        # Caja con Entradas de Texto1
         boxEntry1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         boxPrincipal.pack_start(boxEntry1, True, False, 0)
 
@@ -63,7 +65,7 @@ class FiestraPrincipal(Gtk.Window):
         self.entryDni.set_max_length(9)
         boxEntry1.pack_start(self.entryDni, True, False, 0)
 
-        #Caja con Etiquetas2
+        # Caja con Etiquetas2
         boxLabel2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         boxPrincipal.pack_start(boxLabel2, True, False, 0)
 
@@ -76,7 +78,7 @@ class FiestraPrincipal(Gtk.Window):
         self.lblRepetidor = Gtk.Label("Repetidor:")
         boxLabel2.pack_start(self.lblRepetidor, True, False, 0)
 
-        #Caja con Entradas de Texto2
+        # Caja con Entradas de Texto2
         boxEntry2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         boxPrincipal.pack_end(boxEntry2, True, False, 0)
 
@@ -102,311 +104,223 @@ class FiestraPrincipal(Gtk.Window):
         name_store.append([15, "FP Media"])
         name_store.append([16, "FP Superior"])
 
-        name_combo = Gtk.ComboBox.new_with_model_and_entry(name_store)
+        self.name_combo = Gtk.ComboBox.new_with_model_and_entry(name_store)
 
-        name_combo.set_entry_text_column(1)
-        boxEntry2.pack_start(name_combo, True, False, 0)
+        self.name_combo.set_entry_text_column(1)
+        boxEntry2.pack_start(self.name_combo, True, False, 0)
 
         self.chkRepetidor = Gtk.CheckButton()
         boxEntry2.pack_start(self.chkRepetidor, True, False, 0)
 
+        self.boxSecundario = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        cajaExterior.pack_end(self.boxSecundario, False, False, 0)
 
-        boxSecundario = Gtk.Box(orientation = Gtk.Orientation.HORIZONTAL, spacing= 6)
-        cajaExterior.pack_end(boxSecundario, False, False, 0)
+        self.botonOcultar = Gtk.Button("Cerrar Consulta")
+        self.botonOcultar.connect("clicked", self.on_botonOcultar_clicked)
+        self.boxSecundario.pack_end(self.botonOcultar, True, False, 0)
 
-        boxBotones2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        boxSecundario.pack_start(boxBotones2, False, False, 0)
-
-        self.mostrarBd = Gtk.TreeView()
-
-
+        self.people_list_store = Gtk.ListStore(str, str, str, str, str, str)
 
 
-
-        #Pagina 2
-        paxina2 = Gtk.Box()
-        paxina2.set_border_width(8)
-        paxina2.add(Gtk.Label("HOLA, soy COCO"))
-        notebook.append_page(paxina2, Gtk.Label("Gestion de Material"))
-
-
-        self.connect("destroy", Gtk.main_quit)
-        self.show_all()
-
-
-
-    def on_btnConsultarClicked(self, boton):
         conexion = dbapi.connect("basedatosAlumnos.dat")  # nos conectamos a la base de datos
         cursor = conexion.cursor()  # cursor para trabajar con la base de datos
 
-        cursor.execute("""select * from alumnos""")
+        for item in cursor.execute("select * from alumnos"):
+            self.people_list_store.append(list(item))
 
-        for rexistro in cursor.fetchall():
+        self.people_tree_view = Gtk.TreeView(self.people_list_store)
 
-            print("Nome: " + rexistro[0])
-            print("Apelidos: " + rexistro[1])
-            print("Dni: " + rexistro[2])
-            print("Edad: " + rexistro[3])
-            print("Curso: " + rexistro[4])
-            print("Repetidor: " + rexistro[5] + "\n")
+        for i, col_title in enumerate(["Nombre", "Apellidos", "Dni", "Edad", "Curso", "Repetidor"]):
+            renderer = Gtk.CellRendererText()
+            column = Gtk.TreeViewColumn(col_title, renderer, text=i)
 
+            # Make column sortable and selectable
+            column.set_sort_column_id(i)
 
-#try:
-    #conexion = dbapi.connect("basedatosAlumnos.dat")  # nos conectamos a la base de datos
-    #cursor = conexion.cursor()  # cursor para trabajar con la base de datos
+            self.people_tree_view.append_column(column)
 
-#except dbapi.DatabaseError as erroConexion:  # tratamiento de excepcion
-    #print("Erro ao crear a conexión")
+        # Handle selection
+        selected_row = self.people_tree_view.get_selection()
+        selected_row.connect("changed", self.item_selected)
 
-#else:
-    #print("A base de datos ten o obxecto: " + str(conexion))
-
-# CODIGO DE CREACION DE LA BASE DE DATOS.Executar só unha vez
-
-#try:
-
-# La consulta se realiza entre comillas triples (modificar)
-
-    #cursor.execute("create table alumnos (Nombre text,Apellidos text,Dni text, Edad text, Curso text, Repetidor text)")
-
-#except dbapi.DatabaseError as erroSQL:
-    #print("Erro na creacion da base de datos: " + str(erroSQL))
-
-#else:
-  #print("Base de datos creada corectamente")
-
-
-#try:
-    # Los comandos se ejecutan con comilla doble y simple para los datos
-      #cursor.execute("insert into alumnos values ('Sergio', 'Sahuquillo', '12345678R', '20', '1ºDAM', 0)")
-      #cursor.execute("insert into alumnos values ('Adrian', 'Brandariz', '17645678R', '25', '1ºASIR', 1)")
-      #cursor.execute("insert into alumnos values ('Andrea', 'Cabezas', '12345418R', '28', '2ºDAM', 1)")
-
-      #conexion.commit()
-
-#except dbapi.DatabaseError as erroInsercion:
-    #print("Erro na insercion de datos: " + str(erroInsercion))
-
-#else:
-    #print("Comando executado correctamente")
+        self.boxSecundario.pack_start(self.people_tree_view, True, True, 0)
 
 
 
 
+        # Pagina 2
+        paxina2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        paxina2.set_border_width(8)
+        notebook.append_page(paxina2, Gtk.Label("Cursos y Tarifas"))
+
+        box1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        paxina2.pack_start(box1, True, False, 0)
+
+        labelCombo = Gtk.Label("Asignaturas")
+        box1.pack_start(labelCombo, True, True, 0)
+        cmbAsignaturas = Gtk.ComboBoxText()
+        cmbAsignaturas.connect("changed", self.on_cmbAsignaturas_changed)
+
+
+
+
+        cmbAsignaturas.set_entry_text_column(0)
+        for asignatura in cursor.execute("select asignatura from asignaturas"):
+
+            cmbAsignaturas.append_text(asignatura[0])
+
+        box1.pack_start(cmbAsignaturas, True, True, 0)
+
+
+        box2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        paxina2.pack_start(box2, True, False, 0)
+
+        labelDia = Gtk.Label("Dia")
+        box2.pack_start(labelDia, True, True, 0)
+
+        self.entryDia = Gtk.Entry()
+        box2.pack_start(self.entryDia, True, True, 0)
+
+
+        box3 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        paxina2.pack_start(box3, True, False, 0)
+
+        labelProfesor = Gtk.Label("Profesor")
+        box3.pack_start(labelProfesor, True, True, 0)
+
+        self.entryProfesor = Gtk.Entry()
+        box3.pack_start(self.entryProfesor, True, True, 0)
+
+        box4 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        paxina2.pack_start(box4, True, False, 0)
+
+        labelPrecio = Gtk.Label("Precio")
+        box4.pack_start(labelPrecio, True, True, 0)
+
+        self.entryPrecio = Gtk.Entry()
+        box4.pack_start(self.entryPrecio, True, True, 0)
 
 
 
 
 
 
-"""        Gtk.Window.__init__(self, title="Exemplo Gtk.TreeView")
-        boxV = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
-        modelo = Gtk.ListStore(str, str, float, bool, str)
-        self.filtro_categoria = modelo.filter_new()
-        self.filtro_categoria.set_visible_func(self.categoria_filtro)
-        self.parametro_filtro_categoria = None
 
-        modelo.append(["Hotel Melia", "García Barbón 48", 75.38, True, '*'])
-        modelo.append(["Hotel Galeones", "Avda Madrid", 80.88, False, '**'])
-        modelo.append(["Hotel Baiha", "Paseo as avenidas 55", 60.38, True, '*****'])
 
-        self.categoria = Gtk.ListStore(str)
-        for estrelas in range(1, 6):
-            self.categoria.append([estrelas * '*'])
 
-        vista = Gtk.TreeView(model=self.filtro_categoria)  # modelo filtrado
-        seleccion = vista.get_selection()
-        seleccion.connect("changed", self.on_seleccion_changed)
-        boxV.pack_start(vista, True, True, 0)
 
-        celdaText = Gtk.CellRendererText()
-        celdaText.set_property("editable", True)
-        celdaText.connect("edited", self.on_celdaText_edited, modelo)
-        columnaHotel = Gtk.TreeViewColumn('Aloxamento', celdaText, text=0)
-        columnaHotel.set_sort_column_id(0)
-        vista.append_column(columnaHotel)
 
-        celdaText2 = Gtk.CellRendererText(xalign=1)
-        columnaDir = Gtk.TreeViewColumn('Dirección', celdaText2, text=1)
-        vista.append_column(columnaDir)
 
-        celdaNum = Gtk.CellRendererProgress()
-        columnaOcupacion = Gtk.TreeViewColumn('Ocupación', celdaNum, value=2)
-        columnaOcupacion.set_sort_column_id(2)
-        vista.append_column(columnaOcupacion)
-
-        celdaMascotas = Gtk.CellRendererToggle()
-
-        columnaMascotas = Gtk.TreeViewColumn('Mascotas', celdaMascotas, active=3)
-        vista.append_column(columnaMascotas)
-
-        celdaCategoria = Gtk.CellRendererCombo()
-        celdaCategoria.set_property("editable", True)
-        celdaCategoria.set_property("model", self.categoria)
-        celdaCategoria.set_property("text-column", 0)
-        celdaCategoria.set_property("has-entry", False)
-        celdaCategoria.connect("edited", self.on_combo_edited, modelo)
-        columnaCategoria = Gtk.TreeViewColumn('Categoria', celdaCategoria, text=4)
-        vista.append_column(columnaCategoria)
-
-        boxH = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.txtHotel = Gtk.Entry()
-        self.txtDireccion = Gtk.Entry()
-        self.chkMascotas = Gtk.CheckButton()
-        self.txtOcupacion = Gtk.Entry()
-        self.cmbCategoria = Gtk.ComboBox(model=self.categoria)
-        celdaCombo = Gtk.CellRendererText()
-        self.cmbCategoria.pack_start(celdaCombo, True)
-        self.cmbCategoria.add_attribute(celdaCombo, "text", 0)
-
-        # Indicarlle que columna queremos mostrar
-        boxH.pack_start(self.txtHotel, True, True, 0)
-        boxH.pack_start(self.txtDireccion, True, True, 0)
-        boxH.pack_start(self.chkMascotas, True, True, 0)
-        boxH.pack_start(self.txtOcupacion, True, True, 0)
-        boxH.pack_start(self.cmbCategoria, True, True, 0)
-        btnEngadir = Gtk.Button(label="Engadir")
-        btnEngadir.connect("clicked", self.on_btnEngadir_clicked, modelo)
-        boxH.pack_start(btnEngadir, True, True, 0)
-
-        boxV.pack_start(boxH, True, True, 0)
-
-        boxHFiltro = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-
-        self.cmbCategoriaF = Gtk.ComboBox(model=self.categoria)
-        celdaComboF = Gtk.CellRendererText()
-        self.cmbCategoriaF.pack_start(celdaComboF, True)
-        self.cmbCategoriaF.add_attribute(celdaComboF, "text", 0)
-
-        btnFiltrar = Gtk.Button(label="Filtrar")
-        btnFiltrar.connect("clicked", self.on_btnFiltrar_clicked)
-
-        boxHFiltro.pack_end(btnFiltrar, False, False, 0)
-        boxHFiltro.pack_end(self.cmbCategoriaF, False, False, 0)
-        boxV.pack_start(boxHFiltro, True, True, 0)
-
-        self.add(boxV)
 
         self.connect("destroy", Gtk.main_quit)
         self.show_all()
 
+    def on_btnConsultarClicked(self, boton):
+        self.boxSecundario.show()
 
-    def on_combo_edited(self, control, fila, texto, modelo):
-        modelo[fila][4] = texto
-
-
-    def on_btnEngadir_clicked(self, control, modelo):
-        fila = self.cmbCategoria.get_active_iter()
-        datos = [self.txtHotel.get_text(), self.txtDireccion.get_text(), float(self.txtOcupacion.get_text()),
-                 self.chkMascotas.get_mode(), self.cmbCategoria.get_model()[fila][0]]
-        modelo.append(datos)  # Engadir o recollido dos controis
+        """conexion = dbapi.connect("basedatosAlumnos.dat")  # nos conectamos a la base de datos
+        cursor = conexion.cursor()  # cursor para trabajar con la base de datos
 
 
-    def on_seleccion_changed(self, seleccion):
-        modelo, punteiro = seleccion.get_selected()
-        if punteiro is not None:
-            self.txtHotel.set_text(modelo[punteiro][0])
-            self.txtDireccion.set_text(modelo[punteiro][1])
-            self.txtOcupacion.set_text(str(modelo[punteiro][2]))
-            self.chkMascotas.set_active(modelo[punteiro][3])
-            categorias = self.cmbCategoria.get_model()
-            # Non funcionaaaaa, REVISAR
-            i = 0
-            for categoria in categorias:
+        self.people_list_store.clear()
+        for item in cursor.execute("select * from alumnos"):
+            self.people_list_store.append(list(item))"""
+        self.actualizar_modelo()
 
-                if modelo[punteiro][4] == categoria[0]:
-                    self.cmbCategoria.set_active(i)
-                i = i + 1
-
-
-    def on_celdaText_edited(self, control, punteiro, texto, modelo):
-        modelo[punteiro][0] = texto
-
-
-    def on_btnFiltrar_clicked(self, control):
-        punteiro = self.cmbCategoriaF.get_active_iter()
-        print("Filtrando os hoteis da categoria: ", self.cmbCategoriaF.get_model()[punteiro][0])
-        self.parametro_filtro_categoria = self.cmbCategoriaF.get_model()[punteiro][0]
-        self.filtro_categoria.refilter()
-
-
-    def categoria_filtro(self, modelo, punteiro, datos):
-        if self.parametro_filtro_categoria is None:
-            return True
+    def on_btnAñadir_clicked(self, button):
+        conexion = dbapi.connect("basedatosAlumnos.dat")  # nos conectamos a la base de datos
+        cursor = conexion.cursor()  # cursor para trabajar con la base de datos
+        nombre = self.entryNombre.get_text()
+        apelidos = self.entryApelidos.get_text()
+        dni = self.entryDni.get_text()
+        edad = self.entryEdad.get_text()
+        curso = self.name_combo.get_active()
+        repetidor = str
+        if (nombre == ""):
+            print("Nombre no valido")
         else:
-            if modelo[punteiro][4] == self.parametro_filtro_categoria:
-                return True
+            if (self.chkRepetidor.get_active()):
+                repetidor = "si"
             else:
-                return False
+                repetidor = "no"
+            try:
+                cursor.execute(
+                    "insert into alumnos values('" + str(nombre) + "','" + str(apelidos) + "','" + str(dni) + "','" + str(
+                        edad) + "','" + str(curso) + "','" + str(repetidor) + "')")
+                conexion.commit()
+                self.actualizar_modelo()
+
+
+            except dbapi.DatabaseError as erroInsercion:
+                print("Erro na insercion de datos: " + str(erroInsercion))
+
+            else:
+                print("Comando executado correctamente")
+
+    def item_selected(self, selection):
+        model, row = selection.get_selected()
+        if row is not None:
+            print("Nombre: ", model[row][0])
+            print("Apellidos: ", model[row][1])
+            print("DNI: ", model[row][2])
+            print("Edad: ", model[row][3])
+            print("Curso: ", model[row][4])
+            print("Repetidor: ", model[row][5])
+            print("")
+            self.dni = model[row][2]
+
+    def initial_show(self):
+        window.show_all()
+
+    def actualizar_modelo(self):
+        conexion = dbapi.connect("basedatosAlumnos.dat")  # nos conectamos a la base de datos
+        cursor = conexion.cursor()  # cursor para trabajar con la base de datos
+
+        self.people_list_store.clear()
+        for item in cursor.execute("select * from alumnos"):
+            self.people_list_store.append(list(item))
+
+    def on_botonOcultar_clicked(self, boton):
+        self.boxSecundario.hide()
+
+    def on_btnBorrar_clicked(self, boton):
+        conexion = dbapi.connect("basedatosAlumnos.dat")  # nos conectamos a la base de datos
+        cursor = conexion.cursor()  # cursor para trabajar con la base de datos
+        print(self.dni)
+
+        cursor.execute("delete from alumnos where dni='"+self.dni+"'")
+        conexion.commit()
+
+        self.actualizar_modelo()
 
 
 
 
-"""
-"""
-try:
-    conexion = dbapi.connect("basedatos.dat")  # nos conectamos a la base de datos
-    cursor = conexion.cursor()  # cursor para trabajar con la base de datos
+    def on_cmbAsignaturas_changed(self, combo):
+        conexion = dbapi.connect("basedatosAlumnos.dat")  # nos conectamos a la base de datos
+        cursor = conexion.cursor()  # cursor para trabajar con la base de datos
 
-except dbapi.DatabaseError as erroConexion:  # tratamiento de excepcion
-    print("Erro ao crear a conexión")
+        texto = combo.get_active_text()
+        print(texto)
 
-else:
-    print("A base de datos ten o obxecto: " + str(conexion))
+        try:
+            asignaturas = cursor.execute("select dia, profesor, precio from asignaturas where asignatura='"+texto+"'")
+            for dato in asignaturas:
+                print(dato[0])
+                print(dato[1])
+                print(dato[2])
+                self.entryDia.set_text(dato[0])
+                self.entryProfesor.set_text(dato[1])
+                self.entryPrecio.set_text(dato[2])
 
-# CODIGO DE CREACION DE LA BASE DE DATOS.Executar só unha vez
-
-# try:
-
-# La consulta se realiza entre comillas triples (modificar)
-
-#  cursor.execute("create table alumnos (dni text,nome text,curso text)")
-
-# except dbapi.DatabaseError as erroSQL:
-#   print("Erro na creacion da base de datos: " + str(erroSQL))
-
-# else:
-#  print("Base de datos creada corectamente")
-
-"""
-"""
-try:
-    # Los comandos se ejecutan con comilla doble y simple para los datos
-    #  cursor.execute("insert into alumnos values ('11111a','Miriam Bacelo','2ºDAM')")
-    #  cursor.execute("insert into alumnos values ('66666B','Laura Diz','2ºDAM')")
-    #  cursor.execute("insert into alumnos values ('788995a','Andrea Cabezas','2ºASIR')")
-
-    conexion.commit()
-
-except dbapi.DatabaseError as erroInsercion:
-    print("Erro na insercion de datos: " + str(erroInsercion))
-
-else:
-    print("Comando executado correctamente")
-
-dniAlumno = "11111a"
-try:
-    cursor.execute(""""""select * from alumnos"""""")
-    # lista = cursor.fetchall()
-    # print(type(lista))
-    # cursor.execute("select * from alumnos where dni= '"+ dniAlumno + "'")
-    # cursor.execute("select * from alumnos where dni= ?", (dniAlumno,))
-
-    for rexistro in cursor.fetchall():
-        print("Dni: " + rexistro[0])
-        print("Nome: " + rexistro[1])
-        print("Curso: " + rexistro[2] + """"\n"""")
-
-except dbapi.DatabaseError as erroConsulta:
-    print("Erro na consulta de datos: " + str(erroConsulta))"""
+        except AttributeError:
+            print("No hay ningún item seleccionado.")
 
 
 
 
-
-
-if __name__ == "__main__":
-
-    FiestraPrincipal()
-    Gtk.main()
+window = FiestraPrincipal()
+window.connect("delete-event", Gtk.main_quit)
+window.initial_show()
+Gtk.main()
