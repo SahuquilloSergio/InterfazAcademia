@@ -1,5 +1,6 @@
 import gi
 import sqlite3 as dbapi
+import os
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
@@ -200,17 +201,18 @@ class FiestraPrincipal(Gtk.Window):
         self.entryPrecio = Gtk.Entry()
         box4.pack_start(self.entryPrecio, True, True, 0)
 
+        # Pagina 3
+        paxina3 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        paxina3.set_border_width(8)
+        notebook.append_page(paxina3, Gtk.Label("Informe y Salir"))
 
+        botonInforme = Gtk.Button("Generar Informe")
+        botonInforme.connect("clicked", self.on_botonInforme_clicked)
+        paxina3.pack_start(botonInforme, True, False, 0)
 
-
-
-
-
-
-
-
-
-
+        botonSalir = Gtk.Button("Salir")
+        botonSalir.connect("clicked", self.on_botonSalir_clicked)
+        paxina3.pack_start(botonSalir, True, False, 0)
 
 
         self.connect("destroy", Gtk.main_quit)
@@ -316,6 +318,13 @@ class FiestraPrincipal(Gtk.Window):
 
         except AttributeError:
             print("No hay ningún item seleccionado.")
+
+
+    def on_botonInforme_clicked(self, boton):
+        os.system('python3 InformeAcademia.py')
+
+    def on_botonSalir_clicked(self, boton):
+        Gtk.main_quit()
 
 
 
